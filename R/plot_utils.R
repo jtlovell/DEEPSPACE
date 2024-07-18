@@ -46,6 +46,8 @@
 #' @param min numeric, minimum value
 #' @param max numeric, maximum value
 #' @param scale1toMean logical, should the mean be scaled to 1?
+#' @param col color
+#' @param alpha opacity
 
 #' If called, \code{plot_utils} returns its own arguments.
 #'
@@ -300,4 +302,21 @@ scale_between <- function(x,
       return(max)
     }
   }
+}
+
+#' @title add transparency
+#' @description
+#' \code{add_alpha} add transparency to a color
+#' @rdname plot_utils
+#' @importFrom grDevices col2rgb rgb
+#' @export
+add_alpha <- function(col, alpha = 1){
+
+  if(missing(col) || !all(are_colors(col)))
+    stop("Colors are misspecified\n")
+  if(length(alpha) != 1 || alpha > 1 || alpha < 0)
+    stop("alpha is misspecified\n")
+
+  return(apply(sapply(col, col2rgb)/255, 2, function(x)
+    rgb(x[1], x[2], x[3], alpha = alpha)))
 }

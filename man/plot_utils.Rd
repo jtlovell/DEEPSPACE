@@ -7,6 +7,7 @@
 \alias{round_rect}
 \alias{transform_paf2sameRange}
 \alias{scale_between}
+\alias{add_alpha}
 \title{Generic internal functions used by DEEPSPACE}
 \usage{
 order_bySynteny(paf, chrordTarget)
@@ -42,6 +43,8 @@ round_rect(
 transform_paf2sameRange(paf, xrange)
 
 scale_between(x, min, max, scale1toMean = TRUE)
+
+add_alpha(col, alpha = 1)
 }
 \arguments{
 \item{paf}{data.table containing a windowed paf alignment file}
@@ -104,7 +107,11 @@ the color for that block}
 
 \item{max}{numeric, maximum value}
 
-\item{scale1toMean}{logical, should the mean be scaled to 1?
+\item{scale1toMean}{logical, should the mean be scaled to 1?}
+
+\item{col}{color}
+
+\item{alpha}{opacity
 If called, \code{plot_utils} returns its own arguments.}
 
 \item{blks}{a paf file read into R with the following additional fields:
@@ -127,4 +134,6 @@ risk.
 \code{transform_paf2sameRange} transform_paf2sameRange
 
 \code{scale_between} scale_between
+
+\code{add_alpha} add transparency to a color
 }
