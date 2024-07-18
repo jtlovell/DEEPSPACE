@@ -8,6 +8,7 @@
 \alias{transform_paf2sameRange}
 \alias{scale_between}
 \alias{add_alpha}
+\alias{are_colors}
 \title{Generic internal functions used by DEEPSPACE}
 \usage{
 order_bySynteny(paf, chrordTarget)
@@ -45,6 +46,8 @@ transform_paf2sameRange(paf, xrange)
 scale_between(x, min, max, scale1toMean = TRUE)
 
 add_alpha(col, alpha = 1)
+
+are_colors(col)
 }
 \arguments{
 \item{paf}{data.table containing a windowed paf alignment file}
@@ -136,4 +139,6 @@ risk.
 \code{scale_between} scale_between
 
 \code{add_alpha} add transparency to a color
+
+\code{are_colors} check if a vector is coercible to R colors
 }
