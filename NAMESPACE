@@ -3,6 +3,7 @@
 export(.onAttach)
 export(add_alpha)
 export(are_colors)
+export(calc_curvePolygon)
 export(calc_linStart)
 export(calc_pafBlkCoords)
 export(check_MCScanXhInstall)

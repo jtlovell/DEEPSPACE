@@ -333,3 +333,125 @@ are_colors <- function(col) {
              error = function(e) FALSE)
   })
 }
+
+#' @title convert cosine points to polygon
+#' @description
+#' \code{calc_curvePolygon} from 2d coordinates, make a curve
+#' @rdname plot_utils
+#' @export
+calc_curvePolygon <- function(start1,
+                              end1 = NULL,
+                              start2,
+                              end2 = NULL,
+                              y1,
+                              y2,
+                              npts = 250,
+                              keepat = round(npts / 20)){
+  cosine_points <- function(npts, keepat){
+    # initial number of points
+    # grid to keep always
+    grid <- seq(from = 0, to = pi, length.out = npts) # grid
+    x <- (1 - cos(grid)) / max((1 - cos(grid))) # scaled cosine
+    y <- grid / max(grid) # scaled grid
+    # calculate slope for each point
+    x1 <- x[-1];  y1 <- y[-1]
+    x2 <- x[-length(x)];  y2 <- y[-length(y)]
+    s <-  (y1 - y2) / (x1 - x2)
+    # choose points that capture changes in slope
+    ds <- cumsum(abs(diff(s)))*5
+    wh <- c(1,which(!duplicated(round(ds))), length(x))
+    wh2 <- c(wh, seq(from = 0, to = length(x), by = round(keepat)))
+    wh <- c(wh, wh2)[!duplicated(c(wh, wh2))]
+    wh <- wh[order(wh)]
+    return(cbind(x[wh], y[wh]))
+  }
+
+  scaledCurve <- cosine_points(npts = npts, keepat = keepat)
+  # print(scaledCurve)
+  if (!is.null(end1) | !is.null(end2)) {
+    sc1 <- scaledCurve[,1]
+    sc2 <- scaledCurve[,2]
+
+    tp <- rbind(
+      start1 = data.table(
+        x = start1, y = y1),
+      poly1 = data.table(
+        x = scale_between(x = sc1, min = start1, max = start2),
+        y = scale_between(x = sc2, min = y1, max = y2)),
+      start2 = data.table(x = start2, y = y2),
+      end2 = data.table(
+        x = end2, y = y2),
+      poly2 = data.table(
+        x = scale_between(x = sc1, min = end2, max = end1),
+        y = scale_between(x = sc2, min = y2, max = y1)),
+      end1 = data.table(
+        x = end1, y = y1))
+  }else{
+    tp <- data.table(
+      x = scale_between(x = scaledCurve[,1], min = start1, max = start2),
+      y = scale_between(x = scaledCurve[,2], min = y1, max = y2))
+  }
+
+  return(tp)
+}
+
+#' @title calculate coordinates for rounded rectange polygons
+#' @description
+#' \code{round_rect} from x-y coordinates, make a rounded rectangle
+#' @rdname plot_utils
+#' @importFrom graphics par
+#' @importFrom grDevices dev.size
+#' @export
+round_rect <- function(xleft, ybottom, xright, ytop, plotWidth, plotHeight, xrange, yrange, npts = 50){
+
+  if (ytop <= ybottom){
+    tmp <- ytop
+    ytop <- ybottom
+    ybottom <- tmp
+  }
+  if (xright <= xleft){
+    tmp <- xleft
+    xleft <- xright
+    xright <- tmp
+  }
+
+  # measure graphics device
+  pars <- c(xrange, yrange)
+  asp <- diff(pars[3:4]) / diff(pars[1:2])
+  dev <- plotWidth / plotHeight
+
+  # make a curve and split into left and right
+  radius <- (ytop - ybottom) / 2
+  centerY <- ytop - radius
+  centerX <- mean(c(xleft, xright))
+  theta <- seq(0, 2 * pi, length = npts)
+  circX <- cos(theta)
+  circY <- sin(theta)
+  leftC <- which(circX <= 0)
+  rightC <- which(circX >= 0)
+
+  xR <- circX[rightC]
+  yR <- circY[rightC]
+  ordYR <- rev(order(yR))
+  xR <- xR[ordYR]
+  yR <- yR[ordYR]
+
+  xL <- circX[leftC]
+  yL <- circY[leftC]
+  ordYL <- order(yL)
+  xL <- xL[ordYL]
+  yL <- yL[ordYL]
+
+  # project onto graphics device and scale
+  xRightS <- xright - (radius / asp / dev)
+  xLeftS <- xleft + (radius / asp / dev)
+  if (centerX < xLeftS)
+    xLeftS <- centerX
+  if (centerX > xRightS)
+    xRightS <- centerX
+  xLS <- scale_between(xL, xleft, xLeftS)
+  xRS <- scale_between(xR, xRightS, xright)
+  yLS <- scale_between(yL, ybottom, ytop)
+  yRS <- scale_between(yR, ybottom, ytop)
+  return(data.table(x = c(xRS,xLS), y = c(yRS, yLS)))
+}

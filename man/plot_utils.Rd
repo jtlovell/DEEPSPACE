@@ -9,6 +9,7 @@
 \alias{scale_between}
 \alias{add_alpha}
 \alias{are_colors}
+\alias{calc_curvePolygon}
 \title{Generic internal functions used by DEEPSPACE}
 \usage{
 order_bySynteny(paf, chrordTarget)
@@ -48,6 +49,29 @@ scale_between(x, min, max, scale1toMean = TRUE)
 add_alpha(col, alpha = 1)
 
 are_colors(col)
+
+calc_curvePolygon(
+  start1,
+  end1 = NULL,
+  start2,
+  end2 = NULL,
+  y1,
+  y2,
+  npts = 250,
+  keepat = round(npts/20)
+)
+
+round_rect(
+  xleft,
+  ybottom,
+  xright,
+  ytop,
+  plotWidth,
+  plotHeight,
+  xrange,
+  yrange,
+  npts = 50
+)
 }
 \arguments{
 \item{paf}{data.table containing a windowed paf alignment file}
@@ -141,4 +165,8 @@ risk.
 \code{add_alpha} add transparency to a color
 
 \code{are_colors} check if a vector is coercible to R colors
+
+\code{calc_curvePolygon} from 2d coordinates, make a curve
+
+\code{round_rect} from x-y coordinates, make a rounded rectangle
 }
