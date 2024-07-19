@@ -136,7 +136,6 @@ riparian_paf <- function(pafFiles,
 
     # -- calculate the reference chromosomes for each rounded query position
     refd <- refh[,list(refChr = unique(tname)), by = c("query", "qname", "rnd")]
-
   }
 
   # -- for each member of the daisy chain ...
@@ -182,6 +181,8 @@ riparian_paf <- function(pafFiles,
 
   ##############################################################################
   # 3. integrate user-defined parameters
+  suppressWarnings(dcblks[,tnamen := as.numeric(gsub('\\D+','', tname))])
+  setorder(dcblks, target, query, tnamen, tname, qname, na.last = TRUE)
 
   # -- unique reference chromosomes
   if(sameChrOnly){
@@ -191,8 +192,9 @@ riparian_paf <- function(pafFiles,
     cls <- pal(length(refChrs))
     names(cls) <- refChrs
   }else{
+    suppressWarnings(refh[,tnamen := as.numeric(gsub('\\D+','', tname))])
     refChrs <- subset(refh, !duplicated(tname))
-    setkey(refChrs, tname)
+    setorder(refChrs, tnamen, tname, na.last = TRUE)
     refChrs <- split(refChrs$tname, refChrs$target)
     pal <- colorRampPalette(braidColors)
     cls <- pal(length(refChrs[[1]]))
@@ -204,14 +206,20 @@ riparian_paf <- function(pafFiles,
 
   # -- chromosome order
   if(orderyBySynteny & !sameChrOnly){
+    suppressWarnings(refh[,tnamen := as.numeric(gsub('\\D+','', tname))])
+    setorder(refh, tnamen, tname, na.last = TRUE)
     spl <- split(refh, by = "query")
     chroList <- sapply(spl, USE.NAMES = T, simplify = F, function(x)
       order_bySynteny(paf = x, chrordTarget = refChrs[[1]]))
     chroList <- c(refChrs,  chroList)
   }else{
+
+    suppressWarnings(dcblks[,qnamen := as.numeric(gsub('\\D+','', qname))])
+
     cl <- with(dcblks, data.table(chr = c(qname, tname), genome = c(query, target)))
+    suppressWarnings(cl[,chrn := as.numeric(gsub('\\D+','', chr))])
     cl <- subset(cl, !duplicated(cl))
-    setkey(cl, genome, chr)
+    setorder(cl, genome, chrn, chr, na.last = TRUE)
     chroList <- split(cl$chr, cl$genome)
   }
 

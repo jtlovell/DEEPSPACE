@@ -7,6 +7,7 @@
 clean_windows(
   faFiles,
   wd,
+  preset = NULL,
   genomeIDs = names(faFiles),
   refGenome = genomeIDs[1],
   sameChrOnly = FALSE,
@@ -62,6 +63,11 @@ genomeIDs are taken as the names.}
 
 \item{wd}{character string pointing to the directory where deepspace output
 should be stored}
+
+\item{preset}{more simple specification of parameters to run fast or search
+for repeats and if the genomes are really close or distantly related.
+Options are: "close", "dist", "fast", "reps", "close fast", "close reps",
+"dist fast", "dist reps".}
 
 \item{genomeIDs}{if faFiles are not named, supply genome names here}
 

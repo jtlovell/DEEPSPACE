@@ -13,6 +13,10 @@
 #' @param genomeIDs if faFiles are not named, supply genome names here
 #' @param refGenome the genomeID to be used as the reference. Ignored if
 #' sameChrOnly = TRUE.
+#' @param preset more simple specification of parameters to run fast or search
+#' for repeats and if the genomes are really close or distantly related.
+#' Options are: "close", "dist", "fast", "reps", "close fast", "close reps",
+#' "dist fast", "dist reps".
 #' @param sameChrOnly logical, should the search only be conducted on alignments
 #' where the query and target sequence names are identical? This speeds things
 #' up, but should only be used in very similar genomes where inter-chromosomal
@@ -109,6 +113,7 @@
 #' @export
 clean_windows <- function(faFiles,
                           wd,
+                          preset = NULL,
                           genomeIDs = names(faFiles),
                           refGenome = genomeIDs[1],
                           sameChrOnly = FALSE,
@@ -166,6 +171,40 @@ clean_windows <- function(faFiles,
     overwriteInput = TRUE
     overwriteMinimap2 = TRUE
     overwriteSynpaf = TRUE
+  }
+
+  if(!is.null(preset)){
+    prs <- c("close", "dist", "fast", "reps",
+             "close fast", "close reps", "dist fast", "dist reps")
+    preset <- match.arg(preset, choices = prs)
+
+    if(preset == "close fast"){
+      topNhits2keep <- 1
+      maxTopHits <- 4
+    }
+    if(grepl("close", preset)){
+      windowSize <- 500
+    }
+
+    if(grepl("dist", preset)){
+      blkSize <- 5
+      windowSize <- 5000
+    }
+
+    if(grepl("fast", preset)){
+      filterTopReps <- 0.01
+      kmerSize <- 19
+      kmerStep <- 19
+      nWindows <- 200e3
+      minMapq <- 12
+    }
+
+    if(grepl("reps", preset)){
+      keepEverything <- TRUE
+      filterTopReps <- 0
+      maxTopHits <- Inf
+      minSecRat <- 0.5
+    }
   }
 
   wd <- as.character(wd)
@@ -257,6 +296,7 @@ clean_windows <- function(faFiles,
     rawFiles <- dchain
   }
 
+  rawFiles <- subset(rawFiles, !duplicated(paste(query, target)))
   rawFiles[,`:=`(
     prepTargetFile = file.path(wd, sprintf("%s.fa", target)),
     prepQueryFile = file.path(wd, sprintf("%s.window.fa", query)),
