@@ -261,18 +261,20 @@ synteny_paf <- function(paf,
   # 1. Get parameters set up
   # -- plotting parameters
   paf[,index := 1:.N]
-  qtot <- sum(paf$qlen[!duplicated(paf$qname)])
-  ttot <- sum(paf$tlen[!duplicated(paf$tname)])
-  qtrat <- qtot / ttot
-  if(qtot > ttot){
-    pltHt <- minPlotDim
-    pltWt <- minPlotDim * qtrat
-  }else{
-    pltWt <- minPlotDim
-    pltHt <- minPlotDim / qtrat
+  if(makePlots > 0){
+    qtot <- sum(paf$qlen[!duplicated(paf$qname)])
+    ttot <- sum(paf$tlen[!duplicated(paf$tname)])
+    qtrat <- qtot / ttot
+    if(qtot > ttot){
+      pltHt <- minPlotDim
+      pltWt <- minPlotDim * qtrat
+    }else{
+      pltWt <- minPlotDim
+      pltHt <- minPlotDim / qtrat
+    }
+    qbin <- qtot / (ppi * pltWt)
+    tbin <- ttot / (ppi * pltWt)
   }
-  qbin <- qtot / (ppi * pltWt)
-  tbin <- ttot / (ppi * pltWt)
 
   if(makePlots > 0){
     pdf(pdfFile, height = pltHt, width = pltWt)
@@ -468,25 +470,30 @@ synteny_paf <- function(paf,
   }
 
   # 12. final blocks
-  paf4[,blkID := dbscan::dbscan(dbscan::frNN(
-    x = cbind((qstart + qend) / 2, (tstart + tend) / 2),
-    eps = maxDistBtwHitsInBlk),
-    minPts = 1)$cluster,
-    by = c("qname", "tname")]
-  out <- paf4[,c(colnames(paf)[1:13], "blkID"), with = F]
-  out[,blkID := as.numeric(as.factor(paste(qname, tname, blkID)))]
-  if(verbose)
-    cat(sprintf(", in %s blocks\n", uniqueN(out$blkID)))
+  if(nrow(paf4) > 1){
+    paf4[,blkID := dbscan::dbscan(dbscan::frNN(
+      x = cbind((qstart + qend) / 2, (tstart + tend) / 2),
+      eps = maxDistBtwHitsInBlk),
+      minPts = 1)$cluster,
+      by = c("qname", "tname")]
+    out <- paf4[,c(colnames(paf)[1:13], "blkID"), with = F]
+    out[,blkID := as.numeric(as.factor(paste(qname, tname, blkID)))]
+    if(verbose)
+      cat(sprintf(", in %s blocks\n", uniqueN(out$blkID)))
 
-  if(makePlots > 0){
-    plt1a <- dotplot_paf(
-      paf = out,
-      round2q = qbin,
-      round2t = tbin) +
-      ggtitle(sprintf(
-        "%sk hits that are the final MCScanX anchors, colored by %s blockIDs",
-        round(nrow(paf4)/1e3), uniqueN(out$blkID)))
-    print(plt1a)
+    if(makePlots > 0){
+      plt1a <- dotplot_paf(
+        paf = out,
+        round2q = qbin,
+        round2t = tbin) +
+        ggtitle(sprintf(
+          "%sk hits that are the final MCScanX anchors, colored by %s blockIDs",
+          round(nrow(paf4)/1e3), uniqueN(out$blkID)))
+      print(plt1a)
+    }
+  }else{
+    out <- paf4[0,c(colnames(paf)[1:13]), with = F]
+    out[,blkID := NA]
   }
 
   return(out)
@@ -590,14 +597,20 @@ mcscanx_paf <- function(paf,
 
   ##############################################################################
   # 8. combine with paf and return
-  colv <- collin$blkID; names(colv) <- with(collin, paste(gn1, gn2))
-  colv <- gsub("-.*", "", colv)
-  hits[,mcscanxBlkID := colv[paste(qid, tid)]]
-  if(verbose)
-    cat(sprintf("%s of %s hits in paf are collinear\n",
-                sum(!is.na(hits$mcscanxBlkID)), nrow(hits)))
-  coln <- names(paf)
-  return(hits[,c(coln, "mcscanxBlkID"), with = F])
+  if(nrow(collin) > 0){
+    colv <- collin$blkID; names(colv) <- with(collin, paste(gn1, gn2))
+    colv <- gsub("-.*", "", colv)
+    hits[,mcscanxBlkID := colv[paste(qid, tid)]]
+    if(verbose)
+      cat(sprintf("%s of %s hits in paf are collinear\n",
+                  sum(!is.na(hits$mcscanxBlkID)), nrow(hits)))
+    coln <- names(paf)
+    return(hits[,c(coln, "mcscanxBlkID"), with = F])
+  }else{
+    hits[,mcscanxBlkID := NA]
+    coln <- names(paf)
+    return(hits[0,c(coln, "mcscanxBlkID"), with = F])
+  }
 }
 
 #' @title calc_pafBlkCoords

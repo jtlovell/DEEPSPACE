@@ -196,7 +196,7 @@ clean_windows <- function(faFiles,
       kmerSize <- 19
       kmerStep <- 19
       nWindows <- 200e3
-      minMapq <- 12
+      minMapq <- 10
     }
 
     if(grepl("reps", preset)){
@@ -313,6 +313,7 @@ clean_windows <- function(faFiles,
     cat("2. Preparing minimap2 input files\n")
 
   # -- for each row in the input metadata
+  rawFiles <<- rawFiles
   paraml <- lapply(1:nrow(rawFiles), function(i){
     x <- rawFiles[i,]
 
@@ -320,19 +321,29 @@ clean_windows <- function(faFiles,
     if(!file.exists(x$prepQueryFile) || overwriteInput){
       if(verbose)
         cat(sprintf("\tquery: %s", x$query))
-      qss <- readDNAStringSet(x$rawQueryFa)
+
+      fl <- fasta.seqlengths(x$rawQueryFa)
+      flk <- as.integer(which(fl >= minChrLen))
+      if(length(flk) == 0) stop("no sequences longer than", minChrLen)
+      qss <- BiocGenerics::do.call(c, lapply(flk, function(i)
+        readDNAStringSet(x$rawQueryFa, skip = i-1, nrec = 1)))
+      names(qss) <- names(fl[flk])
+      #
+      # qss <- readDNAStringSet(x$rawQueryFa)
 
       # -- 2.2 subset to large enough chrs
-      qss <- qss[width(qss) > minChrLen]
+      # qss <- qss[width(qss) > minChrLen]
 
       # -- 2.3 parse the names
       names(qss) <- gsub(stripChrname, "", names(qss))
 
       # -- 2.4 calculate window size
-      nbp <- sum(width(qss))
-      stepSize <- round(nbp / nWindows)
-      if(stepSize < 1)
-        stepSize <- 1
+      if(is.null(stepSize)){
+        nbp <- sum(width(qss))
+        stepSize <- round(nbp / nWindows)
+        if(stepSize < 1)
+          stepSize <- 1
+      }
 
       # -- 2. 5 chop into windows
       qssw <- window_ss(
@@ -467,7 +478,7 @@ clean_windows <- function(faFiles,
     refGenome = refGenome,
     genomeIDs = genomeIDs,
     sameChrOnly = sameChrOnly,
-    orderyBySynteny = TRUE,
+    orderyBySynteny = orderyBySynteny,
     sameScale = FALSE,
     braidOffset = .075,
     chrWidth = .05,
@@ -477,7 +488,7 @@ clean_windows <- function(faFiles,
     refGenome = refGenome,
     genomeIDs = genomeIDs,
     sameChrOnly = sameChrOnly,
-    orderyBySynteny = TRUE,
+    orderyBySynteny = orderyBySynteny,
     sameScale = TRUE,
     braidOffset = .075,
     chrWidth = .05,
@@ -486,7 +497,7 @@ clean_windows <- function(faFiles,
     cat(sprintf("\n\t wrote to: riparian_phasedBy%s.pdf", refGenome))
 
   ripFile <- file.path(wd, sprintf("riparian_phasedBy%s.pdf", refGenome))
-  pdf(ripFile, height = length(genomeIDs) * ripHeightPerGenome, width = 8)
+  pdf(ripFile, height = length(genomeIDs) * ripHeightPerGenome, width = ripWidth)
   print(pl1)
   print(pl2)
   dev.off()

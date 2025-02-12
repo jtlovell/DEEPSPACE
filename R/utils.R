@@ -125,7 +125,7 @@ prep_fafiles <- function(fafiles,
 #' @rdname utils
 #' @import data.table
 #' @export
-fread_paf <- function(x, verbose = FALSE){
+fread_paf <- function(x, verbose = FALSE, convert1index = TRUE){
 
   if(!file.exists(x))
     stop(sprintf("paf file: %s does not exist\n", x))
@@ -138,9 +138,9 @@ fread_paf <- function(x, verbose = FALSE){
     "tname", "tlen", "tstart", "tend", "nmatch",
     "alen", "mapq")
   pafClasses <- c(
-    "character", "integer", "integer", "integer", "character",
-    "character", "integer", "integer", "integer", "integer",
-    "integer", "integer")
+    "character", "numeric", "numeric", "numeric", "character",
+    "character", "numeric", "numeric", "numeric", "numeric",
+    "numeric", "numeric")
 
   if(rl > 12)
     pafClasses <- c(pafClasses, rep("character", rl - 12))
@@ -156,6 +156,9 @@ fread_paf <- function(x, verbose = FALSE){
     showProgress = F,
     sep = "\t",
     fill = T)
+  if(convert1index)
+    p[,`:=`(qstart = as.numeric(qstart) + 1,
+            tstart = as.numeric(tstart) + 1)]
   if(verbose)
     cat(sprintf("... read in %s paf entries\n", nrow(x)))
   if(any(!complete.cases(p)))
@@ -171,8 +174,8 @@ fread_paf <- function(x, verbose = FALSE){
 #' @importFrom data.table frankv
 #' @export
 convert_pos2ord <- function(start, end, group, to = 0){
-  x <- (start + end)/2
-  to <- as.integer(to)
+  x <- (as.numeric(start) + as.numeric(end))/2
+  to <- as.numeric(to)
   if(to > 0){
     x <- round_toInteger(x, to)
   }
@@ -188,7 +191,7 @@ convert_pos2ord <- function(start, end, group, to = 0){
 #' @rdname utils
 #' @export
 round_toInteger <- function(x, to){
-  round(x/to, 0) * to
+  as.numeric(round(x/to, 0) * to)
 }
 
 #' @title parse_windPaf
@@ -199,19 +202,24 @@ round_toInteger <- function(x, to){
 #' @export
 parse_windPaf <- function(paf,
                           queryFastaFile,
-                          stripChrname){
+                          stripChrname,
+                          querySeqlens = NULL){
 
-  querySeqlens <- fasta.seqlengths(queryFastaFile)
-  names(querySeqlens) <- gsub(stripChrname, "", names(querySeqlens))
-  paf[,windID := as.integer(as.factor(qname))]
+  paf <- data.table(paf)
+  if(is.null(querySeqlens)){
+    querySeqlens <- fasta.seqlengths(queryFastaFile)
+    names(querySeqlens) <- gsub(stripChrname, "", names(querySeqlens))
+  }
+
+  paf[,windID := as.numeric(as.factor(qname))]
 
   paf[,windChr := gsub("_XstartX.*", "", qname)]
   paf[,winds := as.numeric(gsub(".*_XstartX(.*?)_XendX.*", "\\1", qname))]
 
   paf[,`:=`(
     qname = windChr,
-    qstart = as.integer(qstart + winds),
-    qend = as.integer(qend + winds),
+    qstart = as.numeric(qstart + winds),
+    qend = as.numeric(qend + winds),
     windChr = NULL, winds = NULL)]
 
   paf[,qlen := querySeqlens[qname]]
@@ -276,8 +284,8 @@ parse_pafWindows <- function(paf,
   p[,winds := as.numeric(gsub(".*_XstartX(.*?)_XendX.*", "\\1", qname))]
   windsize <- with(p, max(qend - qstart))
   p[,`:=`(
-    qstart = as.integer(qstart + winds),
-    qend = as.integer(qend + winds))]
+    qstart = as.numeric(qstart + winds),
+    qend = as.numeric(qend + winds))]
 
   if(addMaprank){
     p[,mapp := nmatch / windsize]
@@ -592,7 +600,7 @@ pull_proxHits <- function(x, y, isAnchor, radius){
 
     # -- subset to positions with any nearest neighbors in radius
     hasAnch <- fn$id[sapply(fn$id, length) > 0]
-    wh <- as.integer(names(hasAnch))
+    wh <- as.numeric(names(hasAnch))
     # -- set these observations to true and return
     if(length(wh) > 0)
       xy$inBuffer[wh] <- TRUE
