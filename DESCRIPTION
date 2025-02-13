@@ -1,20 +1,24 @@
 Package: DEEPSPACE
 Type: Package
 Title: Syntenic analysis and plotting from genome assemblies
-Version: 0.1.0
+Version: 0.2.0
 Author: John T. Lovell
 Maintainer: John T. Lovell <jlovell@hudsonalpha.org>
-Description: Treats genomic 'windows' similarly to peptides and runs the 
-    GENESPACE alignment and synteny calling method on these. 
+Description: Fast complexity-reduced genome comparisons and visualizations
 Imports: Biostrings, 
   GenomicRanges, 
   Rsamtools, 
   data.table,
   dbscan,
-  ggplot2
+  ggplot2,
+  rtracklayer,
+  methods,
+  GenomeInfoDb,
+  neuralnet,
+  parallel
 SystemRequirements: MCScanX, 
   minimap2
 License: file LICENSE
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.2

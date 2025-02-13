@@ -23,7 +23,7 @@
 #' @export
 .onAttach <- function(...) {
   packageStartupMessage(paste(strwrap(
-    "DEEPSPACE v0.1.0: genome-wide comparative genomics in R ... this is a
+    "DEEPSPACE v0.2.0: genome-wide comparative genomics in R ... this is a
     development version and may be (definitely is) buggy\n",
     indent = 0, exdent = 8), collapse = "\n"))
 }

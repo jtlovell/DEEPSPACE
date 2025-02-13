@@ -34,13 +34,13 @@ prep_fafiles(
   verbose = TRUE
 )
 
-fread_paf(x, verbose = FALSE)
+fread_paf(x, verbose = FALSE, convert1index = TRUE)
 
 convert_pos2ord(start, end, group, to = 0)
 
 round_toInteger(x, to)
 
-parse_windPaf(paf, queryFastaFile, stripChrname)
+parse_windPaf(paf, queryFastaFile, stripChrname, querySeqlens = NULL)
 
 calc_linStart(fastaFile = NULL, seqLens = NULL, gapSize = 0)
 
