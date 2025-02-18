@@ -11,6 +11,7 @@
 #' @param extraColNames character string vector with the length matching the
 #' number of extra columns in the input file (only used if keepExtraCols = TRUE)
 #' @param overwrite logical, if x exists, should it be overwritten?
+#' @param keepColnames logical, should column names be written?
 #' @param verbose logical, should updates be printed to the console?
 #' \cr
 #' If called, \code{paf_utils} returns its own arguments.
@@ -21,6 +22,7 @@
 #' \code{fread_paf} Use data.table::fread import the 12 columns of a .paf file
 #' @rdname paf_utils
 #' @import data.table
+#' @importFrom stats complete.cases
 #' @export
 fread_paf <- function(x,
                       verbose = FALSE,
@@ -29,14 +31,21 @@ fread_paf <- function(x,
                       extraColNames = NULL){
 
   # -- check arguments
+  verbose <- verbose[1]
+  if(!is.logical(verbose))
+    verbose <- TRUE
+
   if(!file.exists(x))
     stop(sprintf("paf file: %s does not exist\n", x))
   rl <- length(strsplit(readLines(x, 1), "\t")[[1]])
   if(rl < 12)
     stop("data in paf file has < 12 columns\n")
-  verbose <- match.arg(verbose, choices = c(TRUE, FALSE))
-  keepExtraCols <- match.arg(keepExtraCols, choices = c(TRUE, FALSE))
-  convert1index <- match.arg(convert1index, choices = c(TRUE, FALSE))
+  keepExtraCols <- keepExtraCols[1]
+  if(!is.logical(keepExtraCols))
+    keepExtraCols <- FALSE
+  convert1index <- convert1index[1]
+  if(!is.logical(convert1index))
+    convert1index <- TRUE
 
   # -- provide the names and classes
   pafNames <- c(
@@ -89,6 +98,7 @@ fread_paf <- function(x,
   }
 
   # -- convert to 1-index if we desired
+  qstart <- tstart <- NULL
   if(convert1index)
     p[,`:=`(qstart = as.numeric(qstart) + 1,
             tstart = as.numeric(tstart) + 1)]

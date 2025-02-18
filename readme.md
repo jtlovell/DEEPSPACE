@@ -16,11 +16,158 @@ DEEPSPACE synteny mapping functionality is designed to quickly summarize and plo
 
 DEEPSPACE synteny mapping is NOT a substitute for genome-wide variant detection. The smallest SVs that can be detected are a function of the alignment window size and the gap join size parameters (see below). The defaults for these in the human genome result in a minimum INDEL size of XXX and a minimum inversion/translocation size of XXX; any variant smaller than these will be missed. 
 
+
+## Quick start
+
+First, install DEEPSPACE ... you may need to follow along and get some additional dependencies from bioconductor. This is from the interactive R console (e.g. Rstudio, or just in the terminal).
+
+```
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install(c(
+  "GenomicRanges", "GenomeInfoDb", "rtracklayer", "Rsamtools", "Biostrings")
+
+if(!requireNamespace("devtools", quietly = TRUE))
+    install.packages("devtools")
+devtools::install_github("jtlovell/DEEPSPACE", ref = "dev")
+library(DEEPSPACE)
+```
+
+DEEPSPACE has two modes: 
+
+1. Interactive exploration of mappings between two (sets of) sequences — useful for dotplots of hits possibly including very repetitive regions(like mummer/gepard), pairwise synteny maps, and estimates of large structural variants. 
+2. Pipelined mapping across a set of genomes — fast generation of multi-genome synteny (aka 'riparian') maps, tracking of regions of interest, etc. 
+
+### 1. Exploration of mappings between two genomes
+
+The simplest mode of DEEPSPACE is with a single query and a single target fasta file. Here is a mostly reproducible example using whole-genome data downloaded from NCBI
+
+
+#### 1.1. Set up a working directory 
+
+This is the only code here that needs to be modified ... put the path where you want to work in here and assign it `wd`. 
+
+```
+wd <- "/path/where/youll/work"
+if(!dir.exists(wd))
+  dir.create(wd)
+```
+
+#### 1.2 Get two fasta genome assembly files 
+
+Here, to showcase the speed when doing big genomes, we'll do human an mouse. But feel free to use smaller files. Any fasta-formatted assembly should work. Code here is optional, if you have assemblies already on your machine. 
+
+```
+options(timeout = 1000) # may need this to avoid download errors
+humanUrl <- file.path(
+  "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/009/914/755/",
+  "GCF_009914755.1_T2T-CHM13v2.0/GCF_009914755.1_T2T-CHM13v2.0_genomic.fna.gz")
+mouseUrl <- file.path(
+  "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/635/",
+  "GCF_000001635.27_GRCm39/GCF_000001635.27_GRCm39_genomic.fna.gz")
+humanFaFile <- file.path(wd, basename(humanUrl))
+mouseFaFile <- file.path(wd, basename(mouseUrl))
+download.file(humanUrl, humanFaFile)
+download.file(mouseUrl, mouseFaFile)
+```
+
+#### 1.3 Read the fasta files into R 
+
+DEEPSPACE provides a convenience function: `import_dnass()` which is a wrapper for `Biostrings::readDNAStringSet()` that can optionally parse chromosome names to just their IDs and subset out any small sequences. Here, all chromosomes are > 10Mb in size and we can use the renaming rules to strip everything after ", " and before "chromosome ". 
+
+```
+chrNameRules <- c(".*chromosome ", ", .*")
+human <- import_dnass(
+  humanFaFile, 
+  minChrLen = 10e6, 
+  regexs = chrNameRules)
+mouse <- import_dnass(
+  mouseFaFile, 
+  minChrLen = 10e6, 
+  regexs = chrNameRules)
+```
+
+#### 1.4 Run windowed minimap2 between the two genomes. 
+
+The main logic of DEEPSPACE is that, with the right parameters, we can treat genomic sequences in a similar manner to protein sequences (albeit with a faster loss of sequence similarity), and thus apply the synteny machinery and dotplotting methods from GENESPACE. DEEPSPACE accomplishes this by "windowing" the query genome and mapping the windows to the target genome with `mm2_windows()`. There are a lot of parameters, but these can generally be controlled well enough with the 'speed' and 'x' presets, which control the precision and expected divergence between genomes. 
+
+Here we are using the "fast" and "-x20" presets, which are fine for quick synteny maps between genomes that are 20% or more diverged. This should take 1-10 mins depending on your system. Before we do that, we should also check for a valid installation of minimap2. DEEPSPACE will do this internally, but best to ensure that this is OK before doing anything else.
+
+```
+path2mm2 <- "/opt/miniconda3/envs/minimap2/bin/minimap2"
+path2mm2 <- check_minimap2Install(path2mm2)
+
+windPaf <- mm2_windows(
+  query = mouse, 
+  target = human, 
+  wd = wd, 
+  speedPreset = "fast",
+  xPreset = "20",
+  minimap2call = path2mm2)
+```
+
+#### 1.5 Plot windowed hits as a dotplot
+
+We can then take these hits and see what synteny might generally look like. Here, just plotting single best (mapq of 60) hits. Like GENESPACE, DEEPSPACE provides ggplot2-enabled routines to make plots. These are flexible and allow further customization through normal ggplot2 themes etc. 
+
+```
+dotplot_paf(paf = subset(windPaf, mapq == 60))
+```
+
+#### 1.6 Call syntenic blocks and anchor hits from the windowed hits. 
+
+Like GENESPACE, DEEPSPACE uses `MCScanX` and `dbscan` to parse and cluster hits into syntenic blocks. Since the mapq60 plot looks pretty good, we'll go ahead and only use the top hit, but will allow some edge cases where the min mapq is a bit lower (>11 here). Also, since we are only interest in broad-scale synteny (that can be visualized genome wide), we will let any gaps between hits < 1Mb be collapsed into the same syntenic blocks. 
+
+```
+path2mcs <- "~/Documents/programs/MCScanX/MCScanX_h"
+path2mcs <- check_MCScanXhInstall(path2mcs)
+synList <- synteny_windows(
+  paf = windPaf, 
+  topHits2keep = 1,
+  minMapq = 12, 
+  tmpDir = wd, 
+  maxGapInBlk = 1e6, 
+  MCScanX_hCall = path2mcs)
+synHits <- synList$hits
+synBlks <- synList$blkCoords
+```
+
+#### 1.7 Synteny plotting
+
+`synteny_windows()` produces two paf-formatted data.tables with the additional column "blkID". The 'hits' object is just the output from `mm2_windows()` clustered into block and excluding non-syntenic hits. The 'blkCoords' object contains the start and end coordinates of the blocks. Now that we have the block coordinates, we can do dotplotting and riparian plotting without the background noise. 
+
+First off, we can re-make the above plot with just the syntenic hits, colored by blkID (this is done by default if blkID is in the column names)
+
+```
+dotplot_paf(paf = synHits)
+```
+
+We can also make a simplified 'dotplot' with the full intervals of each block ... this has the added benefit of showing very small blocks as dots instead of tiny segments (that sometimes cannot be seen):
+
+```
+dotplot_paf(paf = synBlks, minWidth4segment = 1e6)
+```
+
+Finally, we can visualize blocks as a two-genome riparian map:
+
+```
+riparian_paf(
+  paf = synBlks, 
+  targetLab = "human",
+  queryLab = "mouse")
+```
+
+### 2. Fast synteny maps across multiple genomes
+
+# Stopped here ... everything below might be wrong
+
+get some data and write it to a working directory
+
 ## Functionality
 
 DEEPSPACE offers fast sequence summaries and comparisons in R with the following:
 
-1. `mm2_windows`: Short sequence ('windowed') alignments between paird of genomes
+1. `mm2_windows`: Short sequence ('windowed') alignments between pair of genomes
 2. `dotplot_paf`: Dot or segment plots of paf-formatted alignments
 3. `syntenic_windows`: Gene-free syntenic hits and blocks from windowed alignments. 
 4. `riparian_paf`: One-line riparian plotting from a set of paf-formatted alignments.

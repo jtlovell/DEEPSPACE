@@ -4,18 +4,18 @@
 \alias{window_it}
 \title{flexible sliding window constructor}
 \usage{
-window_it(x, width, step, minWindowSize = width/2)
+window_it(x, windowSize, stepSize, minWindowSize = windowSize/2)
 }
 \arguments{
 \item{x}{GRanges, DNAStringSet or SeqInfo object. The start and end
 coordinates for the windows are taken from this.}
 
-\item{width}{integer of length 1, specifying the window size in basepairs}
+\item{windowSize}{integer of length 1, specifying the window size in basepairs}
 
-\item{step}{integer of length 1, specifying the step size in basepairs}
+\item{stepSize}{integer of length 1, specifying the step size in basepairs}
 
 \item{minWindowSize}{numeric of length 1, specifying the minimum window size
-to be retained. Defaults to 50% of the width.}
+to be retained. Defaults to 50 percent of the width.}
 }
 \value{
 GRanges object with the window ranges without considering strand
@@ -27,10 +27,4 @@ allowing non-overlapping windows.
 }
 \details{
 Constructs the windows in data.table
-}
-\examples{
-\dontrun{
-# coming soon.
-}
-
 }

@@ -17,11 +17,12 @@
 #' of sequence and total sequence covered.
 #' @rdname gr_utils
 #' @importFrom GenomicRanges sort reduce width
+#' @importFrom methods is
 #' @export
 join_gappedRanges <- function(x,
                               min.gapwidth = 0){
   # -- check input parameters
-  if(!is.(x, "GRanges"))
+  if(!is(x, "GRanges"))
     stop("x must be a GRanges object\n")
 
   min.gapwidth <- as.integer(min.gapwidth)
@@ -72,11 +73,12 @@ join_gappedRanges <- function(x,
 #' @rdname gr_utils
 #' @importFrom GenomicRanges elementMetadata ranges reduce
 #' @importFrom data.table uniqueN
+#' @importFrom methods is
 #' @export
 reduce_grByGroup <- function(x, ...){
 
   # -- check input parameters
-  if(!is.(x, "GRanges"))
+  if(!is(x, "GRanges"))
     stop("x must be a GRanges object\n")
 
   # -- if there is no element metadata just reduce
@@ -91,6 +93,7 @@ reduce_grByGroup <- function(x, ...){
     }else{
 
       # -- for each unique element, reduce
+      splb <- NULL
       tmp <- x
       spl <- split(x, splb)
       x <- unlist(reduce(spl, ...))
@@ -111,12 +114,12 @@ reduce_grByGroup <- function(x, ...){
 #' masked
 #' @rdname gr_utils
 #' @importFrom GenomicRanges elementMetadata makeGRangesFromDataFrame setdiff
-#' @importFrom methods as
+#' @importFrom methods as is
 #' @export
 make_hierarchical <- function(x){
 
   # -- check input parameters
-  if(!is.(x, "GRanges"))
+  if(!is(x, "GRanges"))
     stop("x must be a GRanges object\n")
 
   # -- if no elementMetadata or all same value, return

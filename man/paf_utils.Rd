@@ -6,7 +6,13 @@
 \alias{fwrite_paf}
 \title{Convenience functions related to StringSet objects}
 \usage{
-fread_paf(x, verbose = FALSE, convert1index = TRUE)
+fread_paf(
+  x,
+  verbose = FALSE,
+  convert1index = TRUE,
+  keepExtraCols = FALSE,
+  extraColNames = NULL
+)
 
 fwrite_paf(
   paf,
@@ -26,14 +32,16 @@ If called, \code{paf_utils} returns its own arguments.}
 \item{convert1index}{logical, should the paf be converted into 1-indexed
 formatting (to then be converted into GRanges etc)?}
 
-\item{paf}{data.table or data.frame coercible to a paf file.}
-
 \item{keepExtraCols}{logical, should columns beyond the first 12 be kept?}
-
-\item{overwrite}{logical, if x exists, should it be overwritten?}
 
 \item{extraColNames}{character string vector with the length matching the
 number of extra columns in the input file (only used if keepExtraCols = TRUE)}
+
+\item{paf}{data.table or data.frame coercible to a paf file.}
+
+\item{keepColnames}{logical, should column names be written?}
+
+\item{overwrite}{logical, if x exists, should it be overwritten?}
 }
 \description{
 \code{paf_utils} Simplify common scripting goals on StringSet objects

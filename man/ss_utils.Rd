@@ -4,31 +4,41 @@
 \alias{ss_utils}
 \alias{kmerize_ss}
 \alias{pull_kmerBlocks}
+\alias{import_dnass}
 \title{Convenience functions related to StringSet objects}
 \usage{
-kmerize_ss(x, width = 10, dropDuplicates = TRUE)
+kmerize_ss(x, kmerSize = 10, dropDuplicates = TRUE)
 
 pull_kmerBlocks(kmerSS, x, min.gapwidth = 100, nCores = 1)
+
+import_dnass(faFile, minChrLen = 0, regexs = NULL)
 }
 \arguments{
 \item{x}{StringSet object}
 
-\item{dropDuplicates}{logical, should duplicate entries be dropped?
-\cr
-If called, \code{ss_utils} returns its own arguments.}
+\item{kmerSize}{integer, width of the interval}
+
+\item{dropDuplicates}{logical, should duplicate entries be dropped?}
 
 \item{kmerSS}{StringSet object containing sequences to kmerize}
 
 \item{min.gapwidth}{passed to GenomicRanges::reduce specifying the minimum
 gap across which ranges should be reduced}
+
+\item{nCores}{integer, the number of parallel processes to run}
+
+\item{faFile}{file.path to the fasta file}
+
+\item{minChrLen}{integer, minimum chromosome length to retain}
+
+\item{regexs}{character vector of regular expressions to parse the seq names.}
 }
 \description{
 \code{ss_utils} Simplify common scripting goals on StringSet objects
 
-\code{join_gappedRanges} Reduces ranges, returning a granges with proportion
-of sequence and total sequence covered.
-
 \code{kmerize_ss} Split sequences into 1bp offset sliding windows
 
 \code{pull_kmerBlocks} exact kmer extraction and summarization
+
+\code{import_dnass} read in and optionally parse a fasta file
 }

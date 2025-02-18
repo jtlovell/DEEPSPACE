@@ -1,11 +1,12 @@
 Package: DEEPSPACE
 Type: Package
 Title: Syntenic analysis and plotting from genome assemblies
-Version: 0.2.0
+Version: 0.2.1
 Author: John T. Lovell
 Maintainer: John T. Lovell <jlovell@hudsonalpha.org>
-Description: Fast complexity-reduced genome comparisons and visualizations
+Description: Fast complexity-reduced genome comparisons and visualizations.
 Imports: Biostrings, 
+  BiocGenerics,
   GenomicRanges, 
   Rsamtools, 
   data.table,

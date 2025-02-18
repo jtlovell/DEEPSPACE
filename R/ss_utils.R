@@ -8,17 +8,12 @@
 #' @param min.gapwidth passed to GenomicRanges::reduce specifying the minimum
 #' gap across which ranges should be reduced
 #' @param dropDuplicates logical, should duplicate entries be dropped?
-#' \cr
-#' If called, \code{ss_utils} returns its own arguments.
+#' @param kmerSize integer, width of the interval
+#' @param faFile file.path to the fasta file
+#' @param minChrLen integer, minimum chromosome length to retain
+#' @param regexs character vector of regular expressions to parse the seq names.
+#' @param nCores integer, the number of parallel processes to run
 #'
-
-#' @title join adjacent ranges
-#' @description
-#' \code{join_gappedRanges} Reduces ranges, returning a granges with proportion
-#' of sequence and total sequence covered.
-#' @rdname ss_utils
-#' @importFrom GenomicRanges sort reduce width
-#' @export
 
 #' @title kmerize stringset
 #' @description
@@ -28,14 +23,14 @@
 #' @importFrom Biostrings seqinfo
 #' @export
 kmerize_ss <- function(x,
-                       width = 10,
+                       kmerSize = 10,
                        dropDuplicates = TRUE){
   # -- check parameters
   if(!is(x, "StringSet"))
     stop("x must be a DNA or AA StringSet\n")
-  width <- as.integer(width)
-  if(length(width) != 1 || is.null(width) || is.na(width))
-    stop("width must be a single integer value\n")
+  kmerSize <- as.integer(kmerSize)
+  if(length(kmerSize) != 1 || is.null(kmerSize) || is.na(kmerSize))
+    stop("kmerSize must be a single integer value\n")
   if(!is.logical(dropDuplicates) || length(dropDuplicates) != 1)
     stop("dropDuplicates must be a single logical value")
 
@@ -45,13 +40,13 @@ kmerize_ss <- function(x,
 
   # -- pull seqinfo for sliding windows
   gr <- GRanges(seqinfo(x))
-  sw <- unlist(slidingWindows(gr, width = width, step = 1))
+  sw <- unlist(slidingWindows(gr, width = kmerSize, step = 1))
 
   # -- chop of ss into windows
   sso <- x[sw]
 
   # -- drop any partial windows
-  sso <- sso[width(sso) == width]
+  sso <- sso[width(sso) == kmerSize]
 
   # -- drop anything identical (if specified)
   if(dropDuplicates)
@@ -81,13 +76,11 @@ pull_kmerBlocks <- function(kmerSS,
   width <- as.integer(width)
   if(length(width) != 1 || is.null(width) || is.na(width))
     stop("width must be a single integer value\n")
-  if(!is.logical(dropDuplicates) || length(dropDuplicates) != 1)
-    stop("dropDuplicates must be a single logical value")
 
   # -- pdict only works on same length sequences, kmerize if necessary
   if(length(unique(width(kmerSS))) > 1){
     minSeqLen <- min(width(kmerSS))
-    kmerSS <- kmerize_ss(ss = kmerSS, width = minSeqLen)
+    kmerSS <- kmerize_ss(x = kmerSS, kmerSize = minSeqLen)
     kmerSS <- kmerSS[!duplicated(kmerSS)]
   }
 
@@ -96,7 +89,7 @@ pull_kmerBlocks <- function(kmerSS,
   kmerLen <- width(kmerSS)[1]
   pdictKmer <- PDict(kmerSS)
 
-  # -- loop through each target sequence
+  # -- loop through each target sequence and find exact matches
   kmerLocs <- parallel::mclapply(
     names(x),
     mc.preschedule = FALSE,
@@ -116,4 +109,24 @@ pull_kmerBlocks <- function(kmerSS,
   names(kmerLocs) <- NULL
   suppressWarnings(out <- do.call(c, kmerLocs))
   return(out)
+}
+
+#' @title import fasta as DNAStringSet
+#' @description
+#' \code{import_dnass} read in and optionally parse a fasta file
+#' @rdname ss_utils
+#' @importFrom Biostrings readDNAStringSet width
+#' @export
+import_dnass <- function(faFile, minChrLen = 0, regexs = NULL){
+  ss <- readDNAStringSet(faFile)
+
+  ss <- ss[width(ss) >= minChrLen]
+
+  regexs <- as.character(regexs)
+  regexs <- regexs[!is.na(regexs)]
+  if(length(regexs) > 0){
+    for(i in regexs)
+      names(ss) <- gsub(i,"", names(ss))
+  }
+  return(ss)
 }
