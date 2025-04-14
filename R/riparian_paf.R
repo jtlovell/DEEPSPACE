@@ -130,6 +130,8 @@ riparian_paf <- function(pafFiles,
         fread(rhmd$path[i], col.names = pafNames),
         query = rhmd$query[i],
         target = rhmd$target[i])))
+    refh[, qname := as.character(qname)]
+    refh[, tname := as.character(tname)]
 
     # -- round query hit positions for a fuzzy join
     refh[,rnd := round_toInteger((qstart + qend) / 2, round2join)]
@@ -143,6 +145,8 @@ riparian_paf <- function(pafFiles,
     x <- dcmd[i,]
     # -- read in the daisy chain hits
     pafi <- fread(x$path, col.names = pafNames)
+    pafi[, qname := as.character(qname)]
+    pafi[, tname := as.character(tname)]
 
     if(sameChrOnly)
       pafi <- subset(pafi, tname == qname)

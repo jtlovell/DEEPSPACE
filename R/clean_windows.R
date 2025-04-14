@@ -471,6 +471,8 @@ clean_windows <- function(faFiles,
     sameScale = FALSE,
     braidOffset = .075,
     chrWidth = .05,
+    highlightInversions = highlightInversions,
+    braidAlpha = braidAlpha,
     ...)
   pl2 <- riparian_paf(
     pafFiles = rawFiles$synFile,
@@ -481,6 +483,8 @@ clean_windows <- function(faFiles,
     sameScale = TRUE,
     braidOffset = .075,
     chrWidth = .05,
+    highlightInversions = highlightInversions,
+    braidAlpha = braidAlpha,
     ...)
   if(verbose)
     cat(sprintf("\n\t wrote to: riparian_phasedBy%s.pdf", refGenome))

@@ -94,6 +94,8 @@ transform_paf2riparian <- function(paf,
                                    colorColumn = NULL,
                                    chrWidth = braidOffset){
   blks <- data.table(paf)
+  blks[, qname := as.character(qname)]
+  blks[, tname := as.character(tname)]
   plWt <- dev.size()[1]
   plHt <- dev.size()[2]
 
