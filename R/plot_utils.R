@@ -105,15 +105,12 @@ transform_paf2riparian <- function(paf,
 
   # -- get the linear positions of blocks and chromosomes
   qlens <- with(blks, tapply(qlen, qname, min))
-  if(!all(names(chrordQuery) %in% names(qlens)))
-    stop("supplied query chromosome order does not match qnames\n")
-  chrordQuery <- chrordQuery[chrordQuery %in% names(qlens)]
-  qlens <- qlens[chrordQuery]
+  chrordQuery <- chrordQuery[as.character(chrordQuery) %in% names(qlens)]
+  qlens <- qlens[as.character(chrordQuery)]
+
   tlens <- with(blks, tapply(tlen, tname, min))
-  if(!all(names(chrordTarget) %in% names(tlens)))
-    stop("supplied target chromosome order does not match tnames\n")
-  chrordTarget <- chrordTarget[chrordTarget %in% names(tlens)]
-  tlens <- tlens[chrordTarget]
+  chrordTarget <- chrordTarget[as.character(chrordTarget) %in% names(tlens)]
+  tlens <- tlens[as.character(chrordTarget)]
 
   qgap <- max(qlens) * gapProp
   tgap <- max(tlens) * gapProp
